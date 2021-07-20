@@ -1,0 +1,78 @@
+## Default values.yaml for Telegraf
+## This is a YAML-formatted file.
+## ref: https://hub.docker.com/r/library/telegraf/tags/
+
+replicaCount: 1
+
+image:
+  repo: "harbor-repo.vmware.com/dockerhub-proxy-cache/library/telegraf"
+  tag: "1.19-alpine"
+  pullPolicy: IfNotPresent
+
+podAnnotations: {}
+
+podLabels: {}
+
+imagePullSecrets: []
+
+## Configure args passed to Telegraf containers
+args: []
+
+
+# The name of a secret in the same kubernetes namespace which contains values to
+# be added to the environment (must be manually created)
+# This can be useful for auth tokens, etc.
+env:
+  - name: HOSTNAME
+    value: "telegraf-polling-service"
+  #add any env vars her
+  - name: TO_PROXY_URL #the example below can stay the same if you are using the TMC integration
+    value: wavefront-proxy-tanzu.tanzu-observability-saas.svc.cluster.local
+
+
+envFromSecret: "vsphere-creds"
+
+metrics:
+  health:
+    enabled: true
+
+## Exposed telegraf configuration
+## For full list of possible values see `/docs/all-config-values.yaml` and `/docs/all-config-values.toml`
+## ref: https://docs.influxdata.com/telegraf/v1.1/administration/configuration/
+config:
+  agent:
+    interval: "10s"
+    round_interval: true
+    metric_batch_size: 1000
+    metric_buffer_limit: 10000
+    collection_jitter: "0s"
+    flush_interval: "10s"
+    flush_jitter: "0s"
+    precision: ""
+    debug: true
+    quiet: false
+    logfile: ""
+    hostname: "$HOSTNAME"
+    omit_hostname: false
+  processors:
+    - enum:
+        mapping:
+          field: "status"
+          dest: "status_code"
+          value_mappings:
+            healthy: 1
+            problem: 2
+            critical: 3
+  outputs:
+    - wavefront:
+        host: "wavefront-proxy-tanzu.tanzu-observability-saas.svc.cluster.local"
+        port: 2878
+        metric_separator: "."
+        source_override: ["hostname", "agent_host", "node_host"]
+        convert_paths: true
+  inputs:
+    - vsphere:
+        vcenters: [ "https://vcsa-01a.corp.local" ]
+        username: "$VSPHERE_USER"
+        password: "$VSPHERE_PASS"
+        insecure_skip_verify: true
