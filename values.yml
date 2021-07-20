@@ -5,7 +5,9 @@
 replicaCount: 1
 
 image:
-  repo: "harbor-repo.vmware.com/dockerhub-proxy-cache/library/telegraf"
+  repo: "telegraf"
+  #uncomment the below line if internal vmware
+  # repo: "harbor-repo.vmware.com/dockerhub-proxy-cache/library/telegraf"
   tag: "1.19-alpine"
   pullPolicy: IfNotPresent
 
